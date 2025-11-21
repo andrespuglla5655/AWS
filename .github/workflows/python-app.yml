@@ -2,62 +2,77 @@ name: Python application
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
-
-permissions:
-  contents: read
+    branches: ["main"]
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    # 1. Descargar repo
+    - name: Checkout code
+      uses: actions/checkout@v4
 
+    # 2. Configurar Python
     - name: Set up Python 3.10
       uses: actions/setup-python@v3
       with:
         python-version: "3.10"
 
+    # 3. Instalar dependencias
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
+    # 4. Lint
     - name: Lint with flake8
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
+    # 5. Tests
     - name: Test with pytest
       run: |
         pytest || echo "No tests found, skipping."
 
-    - name: Configure AWS credentials
+    # 6. Login AWS
+    - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-2
 
+    # 7. Login en ECR
     - name: Login to Amazon ECR
       uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Build, tag, and push image
-      env:
-        ECR_REGISTRY: 675082085204.dkr.ecr.us-east-2.amazonaws.com
-        ECR_REPOSITORY: aws-demo
+    # 8. Build + Push Docker image
+    - name: Build, tag, and push docker image
       run: |
-        docker build -t $ECR_REPOSITORY .
-        docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:latest
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        IMAGE_URI=675082085204.dkr.ecr.us-east-2.amazonaws.com/aws-demo:latest
+        docker build -t aws-demo .
+        docker tag aws-demo:latest $IMAGE_URI
+        docker push $IMAGE_URI
 
-    - name: Deploy to ECS
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+    # 9. Registrar la Task Definition en ECS
+    - name: Register Task Definition
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
         task-definition: ecs-task-def.json
-        service: aws-demo-service
+        container-name: aws-demo
+        image: 675082085204.dkr.ecr.us-east-2.amazonaws.com/aws-demo:latest
+
+    # 10. Deploy en ECS
+    - name: Deploy to Amazon ECS
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: aws-service
         cluster: aws-cluster
+        wait-for-service-stability: true
