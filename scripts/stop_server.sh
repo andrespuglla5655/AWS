@@ -1,3 +1,3 @@
 #!/bin/bash
-echo "Deteniendo aplicación Flask..."
+echo "Stopping old app (if running)..."
 pkill -f "python3 app.py" || true

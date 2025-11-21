@@ -1,4 +1,4 @@
 #!/bin/bash
-echo "Iniciando aplicación Flask..."
-cd /home/ec2-user/flaskapp
-nohup python3 app.py > app.log 2>&1 &
+echo "Starting Flask app..."
+cd /home/ec2-user/flaskapp || exit 1
+nohup python3 app.py > /home/ec2-user/flaskapp/app.log 2>&1 &

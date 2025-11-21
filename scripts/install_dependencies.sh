@@ -1,4 +1,6 @@
 #!/bin/bash
-echo "Instalando dependencias en servidor EC2..."
-cd /home/ec2-user/flaskapp
-pip3 install -r requirements.txt
+echo "Installing dependencies..."
+cd /home/ec2-user/flaskapp || exit 1
+if [ -f requirements.txt ]; then
+  python3 -m pip install -r requirements.txt
+fi

@@ -1,0 +1,29 @@
+{
+  "family": "aws-demo-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "3072",
+  "executionRoleArn": "arn:aws:iam::675082085204:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "python-container",
+      "image": "675082085204.dkr.ecr.us-east-2.amazonaws.com/aws-demo:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 80,
+          "protocol": "tcp"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/aws-demo-task",
+          "awslogs-region": "us-east-2",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
