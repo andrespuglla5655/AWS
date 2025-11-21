@@ -1,0 +1,20 @@
+{
+  "family": "aws-demo-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": [ "FARGATE" ],
+  "cpu": "256",
+  "memory": "512",
+  "containerDefinitions": [
+    {
+      "name": "aws-demo",
+      "image": "675082085204.dkr.ecr.us-east-2.amazonaws.com/aws-demo:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 80,
+          "protocol": "tcp"
+        }
+      ]
+    }
+  ]
+}

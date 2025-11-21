@@ -10,8 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  build-and-deploy:
-
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -37,7 +36,6 @@ jobs:
       run: |
         pytest || echo "No tests found, skipping."
 
-    # -------- CONFIGURAR AWS --------
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -45,26 +43,21 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-2
 
-    # -------- LOGIN ECR --------
-    - name: Log in to Amazon ECR
+    - name: Login to Amazon ECR
       uses: aws-actions/amazon-ecr-login@v2
 
-    # -------- BUILD & PUSH DOCKER --------
-    - name: Build, tag, and push image to ECR
+    - name: Build, tag, and push image
       env:
-        AWS_ACCOUNT_ID: "675082085204"
-        AWS_REGION: "us-east-2"
-        ECR_REPO: "aws-demo"
+        ECR_REGISTRY: 675082085204.dkr.ecr.us-east-2.amazonaws.com
+        ECR_REPOSITORY: aws-demo
       run: |
-        docker build -t python-app .
-        docker tag python-app:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest
-        docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest
+        docker build -t $ECR_REPOSITORY .
+        docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-    # -------- DEPLOY ECS --------
     - name: Deploy to ECS
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
         task-definition: ecs-task-def.json
         service: aws-demo-service
         cluster: aws-cluster
-        aws-region: us-east-2
