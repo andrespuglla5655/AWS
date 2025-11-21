@@ -74,5 +74,5 @@ jobs:
       with:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
         service: aws-demo-task-service-a15s23k1
-        cluster: default
+        cluster: aws-demo-cluster
         wait-for-service-stability: true
