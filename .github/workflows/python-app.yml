@@ -62,8 +62,16 @@ jobs:
     # 9. Create ECS cluster if it doesn't exist
     - name: Create ECS cluster
       run: |
-        aws ecs describe-clusters --clusters aws-demo-cluster --region us-east-2 || \
-        aws ecs create-cluster --cluster-name aws-demo-cluster --region us-east-2
+        echo "Checking if ECS cluster aws-demo-cluster exists..."
+        if aws ecs describe-clusters --clusters aws-demo-cluster --region us-east-2 > /dev/null 2>&1; then
+          echo "Cluster aws-demo-cluster already exists"
+        else
+          echo "Creating ECS cluster aws-demo-cluster..."
+          aws ecs create-cluster --cluster-name aws-demo-cluster --region us-east-2
+          echo "Waiting for cluster to be active..."
+          aws ecs wait cluster-active --cluster aws-demo-cluster --region us-east-2
+          echo "Cluster aws-demo-cluster is now active"
+        fi
 
     # 10. Registrar la Task Definition en ECS
     - name: Register Task Definition
