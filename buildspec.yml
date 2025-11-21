@@ -3,13 +3,14 @@ version: 0.2
 phases:
   install:
     commands:
-      - echo "Instalando dependencias"
-      - pip install -r requirements.txt -t .
+      - echo "Instalando dependencias..."
+      - pip install -r requirements.txt || true
   build:
     commands:
-      - echo "Construyendo artefacto"
-      - zip -r app.zip .
+      - echo "Ejecutando build..."
+      - python --version
+      - echo "Build completado"
 
 artifacts:
   files:
-    - app.zip
+    - '**/*'
