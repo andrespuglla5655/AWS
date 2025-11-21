@@ -1,28 +1,44 @@
 version: 0.2
 
+env:
+  variables:
+    # Cambia estos valores en la configuración del proyecto CodeBuild (o usa parámetros)
+    ECR_REPOSITORY: "aws-demo-repo"
+    AWS_REGION: "us-east-1"
+    # AWS_ACCOUNT_ID puedes pasar como variable de entorno en CodeBuild o usar la interpolacion si está disponible
 phases:
   install:
+    runtime-versions:
+      python: 3.10
     commands:
-      - echo "📦 Instalando dependencias..."
-      - python3 --version
+      - echo "📦 Instalando dependencias para build y preparando entorno..."
       - pip install --upgrade pip
       - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-
   pre_build:
     commands:
-      - echo "⚙️ Preparando entorno previo al build..."
-
+      - echo "🔐 Obteniendo variables y autenticando en ECR..."
+      - export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - export REPO_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY
+      - echo "REPO_URI=$REPO_URI"
+      - aws --version
+      - $(aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com)
   build:
     commands:
-      - echo "🚀 Ejecutando pruebas y build..."
-      - if [ -f tests/test_app.py ]; then pytest -q; else echo "No tests found, skipping..."; fi
-      - echo "Build completado."
-
+      - echo "📦 Construyendo app.zip para EC2/CodeDeploy..."
+      - zip -r app.zip . -x .git/\* node_modules/\* __pycache__/\*
+      - echo "🐳 Construyendo imagen Docker..."
+      - IMAGE_TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION:0:7}
+      - docker build -t $REPO_URI:latest .
+      - docker tag $REPO_URI:latest $REPO_URI:$IMAGE_TAG
   post_build:
     commands:
-      - echo "📦 Empaquetando artefactos..."
-
+      - echo "🚀 Pusheando imágenes a ECR..."
+      - docker push $REPO_URI:latest
+      - docker push $REPO_URI:$IMAGE_TAG
+      - echo "📝 Generando imagedefinitions.json para ECS"
+      - printf '[{"name":"your-container-name","imageUri":"%s"}]' $REPO_URI:$IMAGE_TAG > imagedefinitions.json
 artifacts:
   files:
-    - '**/*'
-  discard-paths: no
+    - app.zip
+    - imagedefinitions.json
+  discard-paths: yes
