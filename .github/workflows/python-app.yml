@@ -73,7 +73,17 @@ jobs:
           echo "Cluster aws-demo-cluster is now active"
         fi
 
-    # 10. Registrar la Task Definition en ECS
+    # 10. Create ECS service if it doesn't exist
+    - name: Create ECS service
+      run: |
+        echo "Checking if ECS service aws-demo-task-service-a15s23k1 exists..."
+        if aws ecs describe-services --cluster aws-demo-cluster --services aws-demo-task-service-a15s23k1 --region us-east-2 > /dev/null 2>&1; then
+          echo "Service aws-demo-task-service-a15s23k1 already exists"
+        else
+          echo "Service aws-demo-task-service-a15s23k1 does not exist, it will be created during deployment"
+        fi
+
+    # 11. Registrar la Task Definition en ECS
     - name: Register Task Definition
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
@@ -82,7 +92,7 @@ jobs:
         container-name: aws-demo
         image: 675082085204.dkr.ecr.us-east-2.amazonaws.com/aws-demo:latest
 
-    # 11. Deploy en ECS
+    # 12. Deploy en ECS
     - name: Deploy to Amazon ECS
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
@@ -90,3 +100,4 @@ jobs:
         service: aws-demo-task-service-a15s23k1
         cluster: aws-demo-cluster
         wait-for-service-stability: true
+        force-new-deployment: true
