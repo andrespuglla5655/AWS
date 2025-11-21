@@ -3,14 +3,26 @@ version: 0.2
 phases:
   install:
     commands:
-      - echo "Instalando dependencias..."
-      - pip install -r requirements.txt || true
+      - echo "📦 Instalando dependencias..."
+      - python3 --version
+      - pip install --upgrade pip
+      - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+  pre_build:
+    commands:
+      - echo "⚙️ Preparando entorno previo al build..."
+
   build:
     commands:
-      - echo "Ejecutando build..."
-      - python --version
-      - echo "Build completado"
+      - echo "🚀 Ejecutando pruebas y build..."
+      - if [ -f tests/test_app.py ]; then pytest -q; else echo "No tests found, skipping..."; fi
+      - echo "Build completado."
+
+  post_build:
+    commands:
+      - echo "📦 Empaquetando artefactos..."
 
 artifacts:
   files:
     - '**/*'
+  discard-paths: no
