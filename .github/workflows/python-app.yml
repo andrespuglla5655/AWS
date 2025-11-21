@@ -59,7 +59,13 @@ jobs:
         docker tag aws-demo:latest $IMAGE_URI
         docker push $IMAGE_URI
 
-    # 9. Registrar la Task Definition en ECS
+    # 9. Create ECS cluster if it doesn't exist
+    - name: Create ECS cluster
+      run: |
+        aws ecs describe-clusters --clusters aws-demo-cluster --region us-east-2 || \
+        aws ecs create-cluster --cluster-name aws-demo-cluster --region us-east-2
+
+    # 10. Registrar la Task Definition en ECS
     - name: Register Task Definition
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
@@ -68,7 +74,7 @@ jobs:
         container-name: aws-demo
         image: 675082085204.dkr.ecr.us-east-2.amazonaws.com/aws-demo:latest
 
-    # 10. Deploy en ECS
+    # 11. Deploy en ECS
     - name: Deploy to Amazon ECS
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
